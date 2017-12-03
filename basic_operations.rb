@@ -28,8 +28,7 @@ class Row
 
       data.each do |field, value|
         fields << field
-        value.nil? && value = :null
-        value.is_a?(String) ? values << "'#{CLIENT.escape(value)}'" : values << "#{value}"
+        values << convert_value(value)
       end
 
       query_fields = fields.join(', ')
@@ -41,6 +40,11 @@ class Row
 
     def create_bulk(data = [])
       fields, values, converted_values = [], [], []
+
+      data.each do |row|
+        fields << row.keys
+
+      end
 
       data.first.each_key { |field| fields << field }
       data.each           { |row|   values << row.values }
@@ -57,23 +61,16 @@ class Row
     end
 
     def update(id, data = {})
-      initial_row    = find(id)
-      converted_data = []
+      initial_row = find_by_fields(id, data)
 
-      data.each do |field, value|
-        value = convert_value(value)
-        converted_data << "#{field} = #{value}"
-      end
+      unless initial_row == data
+        converted_data = []
+        data.each { |field, value| converted_data << "#{field} = #{convert_value(value)}" }
 
-      query_data = converted_data.join(', ')
-      query_time = "'#{Time.now.strftime('%Y-%m-%d %H:%M:%S')}'"
+        query_data = converted_data.join(', ')
+        query_time = "'#{Time.now.strftime('%Y-%m-%d %H:%M:%S')}'"
 
-      CLIENT.query("UPDATE #{table} SET #{query_data}, updated_at = #{query_time} WHERE id = #{id}")
-
-      changed_row = find(id)
-
-      unless changed_row == initial_row
-        CLIENT.query("UPDATE #{table} SET is_changed = true WHERE id = #{id}")
+        CLIENT.query("UPDATE #{table} SET #{query_data}, updated_at = #{query_time}, is_changed = true WHERE id = #{id}")
       end
     end
 
@@ -81,11 +78,21 @@ class Row
       CLIENT.query("UPDATE #{table} SET is_changed = false")
     end
 
+    def find_by_fields(id, data = {})
+      fields = []
+      data.each_key { |field| fields << field }
+
+      CLIENT.query("SELECT #{fields.join(', ')} FROM #{table} WHERE id = #{id}").first
+    end
+
     private
 
     def convert_value(value)
-      value.nil? && value = :null
-      value.is_a?(String) ? value = "'#{CLIENT.escape(value)}'" : value
+      case value
+      when NilClass then :null
+      when String   then "'#{CLIENT.escape(value)}'"
+      else value
+      end
     end
   end
 end
