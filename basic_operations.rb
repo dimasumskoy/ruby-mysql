@@ -1,5 +1,4 @@
 require 'mysql2'
-
 load 'secrets.rb'
 
 class Row
@@ -25,10 +24,7 @@ class Row
     def create(data = {})
       fields, values = [], []
 
-      data.each do |field, value|
-        fields << field
-        values << convert_value(value)
-      end
+      data.each { |field, value| fields << field; values << convert_value(value) }
 
       query_fields = fields.join(', ')
       query_values = values.join(', ')
@@ -43,7 +39,7 @@ class Row
       data.each  { |row| row.each_key { |key| fields << key } }; fields.uniq!
       data.each do |row|
         row_values = []
-        fields.each { |field| row.has_key?(field) ? row_values << row[field] : row_values << nil }
+        fields.each { |field| row_values << (row.has_key?(field) ? row[field] : nil) }
         values << row_values
       end
 
@@ -77,9 +73,7 @@ class Row
     end
 
     def find_by_fields(id, data = {})
-      fields = []
-      data.each_key { |field| fields << field }
-
+      fields = data.keys
       CLIENT.query("SELECT #{fields.join(', ')} FROM #{table} WHERE id = #{id}").first
     end
 
