@@ -41,11 +41,6 @@ class Row
     def create_bulk(data = [])
       fields, values, converted_values = [], [], []
 
-      data.each do |row|
-        fields << row.keys
-
-      end
-
       data.first.each_key { |field| fields << field }
       data.each           { |row|   values << row.values }
 
