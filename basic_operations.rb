@@ -1,5 +1,4 @@
 require 'mysql2'
-require 'awesome_print'
 
 load 'secrets.rb'
 
@@ -41,10 +40,7 @@ class Row
     def create_bulk(data = [])
       fields, values, converted_values = [], [], []
 
-      data.each { |row| row.each_key { |key| fields << key } }
-
-      fields.uniq!
-      
+      data.each  { |row| row.each_key { |key| fields << key } }; fields.uniq!
       data.each do |row|
         row_values = []
         fields.each { |field| row.has_key?(field) ? row_values << row[field] : row_values << nil }
